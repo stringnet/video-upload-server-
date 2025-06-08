@@ -65,9 +65,9 @@ app.post('/upload', upload.single('videoFile'), (req, res) => {
 
     // Construye la URL pública del video.
     const videoFileName = req.file.filename;
-    // IMPORTANTE: Asegúrate de que esta 'HOST_URL' coincida con el dominio donde está alojado tu servidor.
-    // Para Easypanel, esto a menudo será el dominio que te asigne (ej. videoupload.scanmee.io)
-    const HOST_URL = process.env.PUBLIC_URL || `http://localhost:${port}`; // Usa una variable de entorno si Easypanel la proporciona, o localhost por defecto
+    // IMPORTANTE: Ahora usamos una variable de entorno para el dominio.
+    // Si la variable no está configurada (ej. en desarrollo local), usa localhost.
+    const HOST_URL = process.env.PUBLIC_HOST_URL || `http://localhost:${port}`; 
 
     const videoDirectUrl = `${HOST_URL}/uploads/${videoFileName}`;
     
@@ -108,5 +108,5 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Servidor escuchando en el puerto ${port}`);
     console.log(`Los archivos se guardarán en: ${path.resolve(UPLOADS_DIR)}`);
-    console.log(`Los archivos subidos serán accesibles (ejemplo): ${process.env.PUBLIC_URL || `http://localhost:${port}`}/uploads/nombre_del_archivo.mp4`);
+    console.log(`Los archivos subidos serán accesibles (ejemplo): ${HOST_URL}/uploads/nombre_del_archivo.mp4`);
 });
