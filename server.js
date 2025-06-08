@@ -1,15 +1,14 @@
 // server.js
 const express = require('express');
 const multer = require('multer');
-const path = require('path'); // Corregido: require('path') es lo correcto
+const path = require('path');
 const fs = require('fs');
-const cors = require('cors'); // Añadido para manejar CORS
+const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3000; // Easypanel puede establecer PORT, o usa 3000 por defecto
+const port = process.env.PORT || 3000;
 
 // --- Configuración de CORS ---
-// Permite solicitudes desde cualquier origen. Para producción, podrías restringirlo.
 app.use(cors());
 
 // --- Configuración de Multer para Almacenamiento de Archivos ---
@@ -48,6 +47,12 @@ const upload = multer({
 // ej. https://videoupload.scanmee.io/uploads/nombre_del_video.mp4
 app.use('/uploads', express.static(path.join(__dirname, UPLOADS_DIR)));
 
+// --- NUEVO: Endpoint para servir el visualizador HTML ---
+// Cuando Unity (o el QR) apunte a /view, serviremos el archivo viewer.html
+app.get('/view', (req, res) => {
+    res.sendFile(path.join(__dirname, 'viewer.html'));
+});
+
 // --- Endpoint para la Subida de Videos ---
 // Unity enviará los archivos a POST /upload
 app.post('/upload', upload.single('videoFile'), (req, res) => {
@@ -60,14 +65,27 @@ app.post('/upload', upload.single('videoFile'), (req, res) => {
 
     // Construye la URL pública del video.
     const videoFileName = req.file.filename;
-    const videoUrl = `https://videoupload.scanmee.io/uploads/${videoFileName}`;
+    // IMPORTANTE: Asegúrate de que esta 'HOST_URL' coincida con el dominio donde está alojado tu servidor.
+    // Para Easypanel, esto a menudo será el dominio que te asigne (ej. videoupload.scanmee.io)
+    const HOST_URL = process.env.PUBLIC_URL || `http://localhost:${port}`; // Usa una variable de entorno si Easypanel la proporciona, o localhost por defecto
 
-    console.log(`Video subido: ${videoFileName}, URL: ${videoUrl}`);
+    const videoDirectUrl = `${HOST_URL}/uploads/${videoFileName}`;
+    
+    // --- MODIFICACIÓN CLAVE AQUÍ ---
+    // En lugar de devolver la URL directa del video, devolvemos la URL de nuestro visualizador HTML.
+    // Pasamos la URL directa del video y el nombre del archivo como parámetros de consulta.
+    const viewerUrl = `${HOST_URL}/view?videoUrl=${encodeURIComponent(videoDirectUrl)}&fileName=${encodeURIComponent(videoFileName)}`;
+    // --- FIN DE MODIFICACIÓN CLAVE ---
+
+    console.log(`Video subido: ${videoFileName}`);
+    console.log(`URL directa del video: ${videoDirectUrl}`);
+    console.log(`URL del visualizador para el usuario: ${viewerUrl}`);
+
 
     res.status(200).json({
         status: 'success',
         message: 'Archivo subido exitosamente!',
-        url: videoUrl,
+        url: viewerUrl, // Devolvemos la URL de nuestro visualizador
         filename: videoFileName
     });
 
@@ -90,5 +108,5 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
     console.log(`Servidor escuchando en el puerto ${port}`);
     console.log(`Los archivos se guardarán en: ${path.resolve(UPLOADS_DIR)}`);
-    console.log(`Los archivos subidos serán accesibles (ejemplo): https://videoupload.scanmee.io/uploads/nombre_del_archivo.mp4`);
+    console.log(`Los archivos subidos serán accesibles (ejemplo): ${process.env.PUBLIC_URL || `http://localhost:${port}`}/uploads/nombre_del_archivo.mp4`);
 });
