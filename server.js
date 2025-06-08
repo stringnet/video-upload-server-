@@ -8,6 +8,10 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// IMPORTANTE: Mover la definición de HOST_URL a un ámbito global
+// para que sea accesible en todo el archivo.
+const HOST_URL = process.env.PUBLIC_HOST_URL || `http://localhost:${port}`; 
+
 // --- Configuración de CORS ---
 app.use(cors());
 
@@ -65,9 +69,7 @@ app.post('/upload', upload.single('videoFile'), (req, res) => {
 
     // Construye la URL pública del video.
     const videoFileName = req.file.filename;
-    // IMPORTANTE: Ahora usamos una variable de entorno para el dominio.
-    // Si la variable no está configurada (ej. en desarrollo local), usa localhost.
-    const HOST_URL = process.env.PUBLIC_HOST_URL || `http://localhost:${port}`; 
+    // HOST_URL ya está definido globalmente arriba
 
     const videoDirectUrl = `${HOST_URL}/uploads/${videoFileName}`;
     
